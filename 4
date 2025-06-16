@@ -1,0 +1,12 @@
+from sklearn.decomposition import TruncatedSVD
+from sklearn.feature_extraction.text import CountVectorizer
+import numpy as np
+
+docs = ["baseball soccer basketball", "soccer basketball tennis", "tennis cricket", "cricket soccer"]
+X = CountVectorizer().fit_transform(docs)
+lsa = TruncatedSVD(n_components=2).fit(X)
+terms = CountVectorizer().fit(docs).get_feature_names_out()
+
+for i, comp in enumerate(lsa.components_):
+    top = comp.argsort()[-5:][::-1]
+    print(f"Topic {i+1}:", " ".join(terms[j] for j in top))
