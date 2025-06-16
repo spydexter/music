@@ -1,0 +1,41 @@
+import numpy as np, random
+from keras.models import Sequential
+from keras.layers import LSTM, Dense
+from keras.callbacks import LambdaCallback
+
+text = open('text_corpus.txt').read().lower()
+chars = sorted(set(text))
+char_idx = {c:i for i,c in enumerate(chars)}
+idx_char = {i:c for i,c in enumerate(chars)}
+
+maxlen, step = 40, 3
+sentences = [text[i:i+maxlen] for i in range(0, len(text)-maxlen, step)]
+next_chars = [text[i+maxlen] for i in range(0, len(text)-maxlen, step)]
+
+X = np.zeros((len(sentences), maxlen, len(chars)), dtype=bool)
+y = np.zeros((len(sentences), len(chars)), dtype=bool)
+for i, seq in enumerate(sentences):
+    for t, char in enumerate(seq): X[i, t, char_idx[char]] = 1
+    y[i, char_idx[next_chars[i]]] = 1
+
+model = Sequential([LSTM(128, input_shape=(maxlen, len(chars))), Dense(len(chars), activation='softmax')])
+model.compile(loss='categorical_crossentropy', optimizer='adam')
+
+def sample(preds, temp=1.0):
+    preds = np.exp(np.log(np.asarray(preds)) / temp)
+    return np.argmax(np.random.multinomial(1, preds / preds.sum(), 1))
+
+def generate(seed, temp=0.5, length=400):
+    out = seed.lower()
+    for _ in range(length):
+        x = np.zeros((1, maxlen, len(chars)))
+        for t, char in enumerate(seed): x[0, t, char_idx[char]] = 1
+        pred = model.predict(x, verbose=0)[0]
+        next_c = idx_char[sample(pred, temp)]
+        out += next_c
+        seed = seed[1:] + next_c
+    return out
+
+model.fit(X, y, batch_size=128, epochs=30, callbacks=[
+    LambdaCallback(on_epoch_end=lambda e, _: print(generate(text[random.randint(0, len(text)-maxlen)], temp=0.5)))
+])
