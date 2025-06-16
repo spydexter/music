@@ -1,0 +1,16 @@
+from sklearn.datasets import fetch_20newsgroups
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report
+
+data = fetch_20newsgroups(subset='train')
+X_train, X_test, y_train, y_test = train_test_split(data.data, data.target, test_size=0.2)
+vec = TfidfVectorizer()
+X_train, X_test = vec.fit_transform(X_train), vec.transform(X_test)
+
+nb = MultinomialNB().fit(X_train, y_train)
+svm = SVC(kernel='linear').fit(X_train, y_train)
+print("NB:\n", classification_report(y_test, nb.predict(X_test), target_names=data.target_names))
+print("SVM:\n", classification_report(y_test, svm.predict(X_test), target_names=data.target_names))
