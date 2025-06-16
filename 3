@@ -1,0 +1,19 @@
+import numpy as np
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from gensim.models import Word2Vec
+
+texts = ["This is the first doc", "This is the second", "And this is the third one", "Is this the first doc?"]
+
+def one_hot(data):
+    vocab = sorted(set(" ".join(data).split()))
+    return np.array([[1 if w in s else 0 for w in vocab] for s in data])
+
+print("One-Hot:\n", one_hot(texts))
+print("BOW:\n", CountVectorizer().fit_transform(texts).toarray())
+print("n-grams:\n", CountVectorizer(ngram_range=(1,2)).fit_transform(texts).toarray())
+print("TF-IDF:\n", TfidfVectorizer().fit_transform(texts).toarray())
+print("Custom (length):\n", np.array([[len(s)] for s in texts]))
+
+w2v = Word2Vec([t.split() for t in texts], min_count=1)
+features = np.array([np.mean([w2v.wv[w] for w in t.split()], axis=0) for t in texts])
+print("Word2Vec:\n", features)
