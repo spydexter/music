@@ -1,0 +1,18 @@
+import nltk
+from nltk import pos_tag, word_tokenize
+from nltk.corpus import stopwords
+
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('stopwords')
+
+text = "John likes to play football with his friends."
+tokens = word_tokenize(text)
+
+def rule_based(tokens):
+    rules = {"john":"NNP", "likes":"VB", "play":"VB", "to":"TO", "with":"TO", "football":"NN", "friends":"NN", "his":"NNP"}
+    return [(t, rules.get(t.lower(), 'NN')) for t in tokens]
+
+filtered = [t for t in tokens if t.lower() not in stopwords.words('english')]
+print("Rule-based:", rule_based(tokens))
+print("Statistical:", pos_tag(filtered))
