@@ -3,20 +3,47 @@ from hmmlearn import hmm
 from sklearn_crfsuite import CRF
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
+from itertools import chain
 
-X = [['walk', 'in', 'the', 'park'], ['eat', 'apple'], ['eat', 'apple', 'in', 'the', 'morning']]
-y = [['V', 'P', 'D', 'N'], ['V', 'N'], ['V', 'N', 'P', 'D', 'N']]
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Sample data
+X = [['walk', 'in', 'the', 'park'],
+     ['eat', 'apple'],
+     ['eat', 'apple', 'in', 'the', 'morning']]
+y = [['V', 'P', 'D', 'N'],
+     ['V', 'N'],
+     ['V', 'N', 'P', 'D', 'N']]
 
-# Dummy encoding for HMM
-vocab = {w:i for seq in X+y for w in seq}
-X_encoded = [np.array([[vocab[w]] for w in seq]) for seq in X_train]
-lens = [len(seq) for seq in X_train]
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.34, random_state=42)
 
-hmm_model = hmm.MultinomialHMM(n_components=3, n_iter=100)
-hmm_model.fit(np.concatenate(X_encoded), lens)
+# ----- HMM PART -----
+# Map words and tags to integers
+word2idx = {word: idx for idx, word in enumerate(set(word for seq in X for word in seq))}
+tag2idx = {'V': 0, 'N': 1, 'P': 2, 'D': 3}
+idx2tag = {v: k for k, v in tag2idx.items()}
 
-crf = CRF().fit(X_train, y_train)
-X_test_encoded = np.concatenate([[vocab[w]] for seq in X_test for w in seq]).reshape(-1, 1)
+# Prepare HMM input
+X_hmm = [np.array([[word2idx[w]] for w in seq]) for seq in X_train]
+lengths = [len(seq) for seq in X_hmm]
 
-print("CRF Results:\n", classification_report(sum(y_test, []), sum(crf.predict(X_test), [])))
+# Train HMM
+hmm_model = hmm.MultinomialHMM(n_components=4, n_iter=100)
+hmm_model.fit(np.concatenate(X_hmm), lengths)
+
+# HMM prediction
+X_test_hmm = [np.array([[word2idx[w]] for w in seq]) for seq in X_test]
+X_flat = np.concatenate(X_test_hmm)
+hmm_preds = hmm_model.predict(X_flat)
+hmm_pred_tags = [idx2tag.get(tag, 'N') for tag in hmm_preds]  # fallback to 'N'
+
+print("HMM Results:\n", classification_report(list(chain.from_iterable(y_test)), hmm_pred_tags))
+
+# ----- CRF PART -----
+crf = CRF()
+crf.fit(X_train, y_train)
+crf_preds = crf.predict(X_test)
+
+print("\nCRF Results:\n", classification_report(
+    list(chain.from_iterable(y_test)),
+    list(chain.from_iterable(crf_preds))
+))
