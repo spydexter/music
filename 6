@@ -1,0 +1,11 @@
+from sklearn.datasets import fetch_20newsgroups
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
+
+data = fetch_20newsgroups(subset='all')
+X = TfidfVectorizer(stop_words='english', max_features=1000).fit_transform(data.data)
+kmeans = KMeans(n_clusters=20, random_state=42).fit(X)
+
+terms = TfidfVectorizer(stop_words='english', max_features=1000).fit(data.data).get_feature_names_out()
+for i, cluster in enumerate(kmeans.cluster_centers_.argsort()[:, -5:][:, ::-1]):
+    print(f"Cluster {i+1}:", [terms[j] for j in cluster])
