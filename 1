@@ -1,0 +1,17 @@
+import nltk, string
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer, PorterStemmer
+from nltk.corpus import stopwords
+
+nltk.download('punkt')
+nltk.download('wordnet')
+nltk.download('stopwords')
+
+def preprocess(text):
+    tokens = word_tokenize(text.lower())
+    return [t for t in tokens if t not in string.punctuation and t not in stopwords.words('english')]
+
+text = "Tokenization breaks text into words. Stemming and Lemmatization reduce them."
+tokens = preprocess(text)
+print("Lemmatization:", [WordNetLemmatizer().lemmatize(t) for t in tokens])
+print("Stemming:", [PorterStemmer().stem(t) for t in tokens])
